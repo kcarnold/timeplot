@@ -347,33 +347,50 @@ Timeplot.Plot.prototype = {
                 });
 
                 var plot = this;
-                var clickHandler = function(event) { 
-                    return function(elmt, evt, target) { 
-                        var doc = plot._timeplot.getDocument();
-                        plot._closeBubble();
-                        var coords = SimileAjax.DOM.getEventPageCoordinates(evt);
-                        var elmtCoords = SimileAjax.DOM.getPageCoordinates(elmt);
-                        plot._bubble = SimileAjax.Graphics.createBubbleForPoint(coords.x, elmtCoords.top + plot._canvas.height, plot._plotInfo.bubbleWidth, plot._plotInfo.bubbleHeight, "bottom");
-                        event.fillInfoBubble(plot._bubble.content, plot._theme, plot._timeGeometry.getLabeler());
-                    }
-                };
-                var mouseOverHandler = function(elmt, evt, target) {
-                    elmt.oldClass = elmt.className;
-                    elmt.className = elmt.className + " timeplot-event-box-highlight";
-                };
-                var mouseOutHandler = function(elmt, evt, target) {
-                    elmt.className = elmt.oldClass;
-                    elmt.oldClass = null;
-                }
-                
                 if (!div.instrumented) {
-                    SimileAjax.DOM.registerEvent(div, "click"    , clickHandler(event));
-                    SimileAjax.DOM.registerEvent(div, "mouseover", mouseOverHandler);
-                    SimileAjax.DOM.registerEvent(div, "mouseout" , mouseOutHandler);
+                    SimileAjax.DOM.registerEvent(div, "click"    , this._makeClickHandler(event));
+                    SimileAjax.DOM.registerEvent(div, "mouseover", this._makeMouseOverHandler(event));
+                    SimileAjax.DOM.registerEvent(div, "mouseout" , this._makeMouseOutHandler(event));
                     div.instrumented = true;
                 }
             }
         }
+    },
+
+    _makeClickHandler: function(event) {
+        var plot = this;
+        return function(elmt, evt, target) {
+            if (plot._plotInfo.eventOnClick) {
+                return plot._plotInfo.eventOnClick(elmt, evt, target, event, plot);
+            }
+            plot._closeBubble();
+            var coords = SimileAjax.DOM.getEventPageCoordinates(evt);
+            var elmtCoords = SimileAjax.DOM.getPageCoordinates(elmt);
+            plot._bubble = SimileAjax.Graphics.createBubbleForPoint(coords.x, elmtCoords.top + plot._canvas.height, plot._plotInfo.bubbleWidth, plot._plotInfo.bubbleHeight, "bottom");
+            event.fillInfoBubble(plot._bubble.content, plot._theme, plot._timeGeometry.getLabeler());
+        };
+    },
+
+    _makeMouseOverHandler: function(event) {
+        var plot = this;
+        return function(elmt, evt, target) {
+            if (plot._plotInfo.eventOnMouseOver) {
+                return plot._plotInfo.eventOnMouseOver(elmt, evt, target, event, plot);
+            }
+            elmt.oldClass = elmt.className;
+            elmt.className = elmt.className + " timeplot-event-box-highlight";
+        };
+    },
+
+    _makeMouseOutHandler: function(event) {
+        var plot = this;
+        return function(elmt, evt, target) {
+            if (plot._plotInfo.eventOnMouseOut) {
+                return plot._plotInfo.eventOnMouseOut(elmt, evt, target, event, plot);
+            }
+            elmt.className = elmt.oldClass;
+            elmt.oldClass = null;
+        };
     },
 
     _plot: function(f) {
